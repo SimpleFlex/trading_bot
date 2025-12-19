@@ -1,0 +1,36 @@
+# =========================
+# ENVIRONMENT VARIABLES
+# =========================
+.env
+
+# =========================
+# NODE MODULES
+# =========================
+node_modules/
+
+# =========================
+# LOG FILES
+# =========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# OS / EDITOR FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# RUNTIME FILES
+# =========================
+*.pid
+*.seed
+*.log
+
+# =========================
+# OPTIONAL (IF USING JSON STORAGE LATER)
+# =========================
+data/
+users.json
