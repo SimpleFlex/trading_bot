@@ -59,7 +59,6 @@ bot.start(async (ctx) => {
   if (!telegramId)
     return ctx.reply("Error: Could not detect your Telegram ID.");
 
-  // Initialize or reset user
   users[telegramId] = users[telegramId] || {
     telegramId,
     step: "AWAITING_CA",
@@ -150,24 +149,25 @@ bot.command("skip", async (ctx) => {
 });
 
 /* =========================
-   TEXT HANDLER
+   TEXT HANDLER (FIXED)
 ========================= */
 bot.on("text", async (ctx) => {
   const telegramId = ctx.from.id;
   const user = users[telegramId];
   if (!user) return;
 
-  if (user.step === "AWAITING_CA") {
-    const token = await getTokenInfo(ctx.message.text.trim());
-    if (!token) return ctx.reply("❌ Token not found on DexScreener.");
+  const text = ctx.message.text.trim();
 
+  // ✅ FIX: Always try CA first
+  const token = await getTokenInfo(text);
+  if (token) {
     user.tokenCA = token.ca;
     user.tokenName = token.name;
     user.tokenSymbol = token.symbol;
     user.tokenImage = token.image;
     user.step = "AWAITING_BIND";
 
-    await safeSend(
+    return safeSend(
       ctx,
       token.image,
       `✅ *Token Detected*
@@ -181,7 +181,10 @@ bot.on("text", async (ctx) => {
 
 Use /bind in your group or /skip to continue`
     );
-  } else if (user.step === "AWAITING_PAYMENT_PROOF") {
+  }
+
+  // PAYMENT PROOF
+  if (user.step === "AWAITING_PAYMENT_PROOF") {
     user.paymentProof =
       ctx.message.text || ctx.message.photo?.slice(-1)[0]?.file_id;
     user.step = "PAYMENT_SUBMITTED";
@@ -189,26 +192,6 @@ Use /bind in your group or /skip to continue`
     await ctx.reply(
       "✅ Payment proof received.\nYour boost will be activated after confirmation 🔥"
     );
-  } else if (user.step === "AWAITING_BIND" && ctx.chat.type === "private") {
-    const groupId = ctx.message.text.trim();
-    if (/^-?\d+$/.test(groupId)) {
-      user.groupId = parseInt(groupId);
-      user.step = "AWAITING_BOOST";
-      await ctx.reply("✅ Group ID saved.\n\nSelect boost duration:", {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "⚡ 4H — 1.9 SOL", callback_data: "BOOST_4H" },
-              { text: "⚡ 8H — 3.4 SOL", callback_data: "BOOST_8H" },
-            ],
-            [
-              { text: "🔥 12H — 4.9 SOL", callback_data: "BOOST_12H" },
-              { text: "🚀 24H — 6.5 SOL", callback_data: "BOOST_24H" },
-            ],
-          ],
-        },
-      });
-    }
   }
 });
 
