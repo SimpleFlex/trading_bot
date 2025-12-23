@@ -1,12 +1,23 @@
 require("dotenv").config();
 const { Telegraf, Markup } = require("telegraf");
 const axios = require("axios");
+const http = require("http"); // ✅ ADDED (Replit fix)
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const BOOST_WALLET = process.env.BOOST_WALLET;
 
 // In-memory storage for users
 const users = {};
+
+/* =========================
+   REPLIT KEEP-ALIVE (ADDED)
+========================= */
+http
+  .createServer((req, res) => {
+    res.writeHead(200);
+    res.end("Bot is running");
+  })
+  .listen(process.env.PORT || 3000);
 
 /* =========================
    FETCH TOKEN INFO
@@ -59,7 +70,7 @@ bot.start(async (ctx) => {
   if (!telegramId)
     return ctx.reply("Error: Could not detect your Telegram ID.");
 
-  users[telegramId] = users[telegramId] || {
+  users[telegramId] = {
     telegramId,
     step: "AWAITING_CA",
     tokenCA: null,
@@ -158,7 +169,7 @@ bot.on("text", async (ctx) => {
 
   const text = ctx.message.text.trim();
 
-  // ✅ FIX: Always try CA first
+  // ✅ ALWAYS allow CA detection (multiple times)
   const token = await getTokenInfo(text);
   if (token) {
     user.tokenCA = token.ca;
@@ -183,7 +194,6 @@ Use /bind in your group or /skip to continue`
     );
   }
 
-  // PAYMENT PROOF
   if (user.step === "AWAITING_PAYMENT_PROOF") {
     user.paymentProof =
       ctx.message.text || ctx.message.photo?.slice(-1)[0]?.file_id;
